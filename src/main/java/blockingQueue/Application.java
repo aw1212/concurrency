@@ -12,13 +12,11 @@ public class Application {
         Thread adder1 = new Adder();
         Thread adder2 = new Adder();
         adder1.start();
+        adder2.start();
         Thread getter1 = new Getter();
         Thread getter2 = new Getter();
         getter1.start();
         getter2.start();
-        new Getter().start();
-        new Getter().start();
-        new Getter().start();
         while(adder1.isAlive() && adder2.isAlive() && getter1.isAlive() && getter2.isAlive()) {
         }
         System.out.println("all done");
