@@ -1,14 +1,19 @@
 import javafx.util.Pair;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class Overlapper {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Overlapper overlapper = new Overlapper();
-        overlapper.run("m quaerat voluptatem.;pora incidunt ut labore et d;, consectetur, adipisci " +
+        String fileName = args[0];
+        Files.lines(Paths.get(fileName)).forEach(overlapper::run);
+        /*overlapper.run("m quaerat voluptatem.;pora incidunt ut labore et d;, consectetur, adipisci " +
                 "velit;olore magnam aliqua;idunt ut labore et dolore magn;uptatem.;i dolorem " +
                 "ipsum qu;iquam quaerat vol;psum quia dolor sit amet, consectetur, a;ia " +
                 "dolor sit amet, conse;squam est, qui do;Neque porro quisquam est, qu;aerat " +
@@ -16,7 +21,7 @@ public class Overlapper {
                 "ipsum quia dolor sit amet;ctetur, adipisci velit, sed quia non numq;unt ut " +
                 "labore et dolore magnam aliquam qu;dipisci velit, sed quia non numqua;us " +
                 "modi tempora incid;Neque porro quisquam est, qui dolorem i;uam eius modi " +
-                "tem;pora inc;am al");
+                "tem;pora inc;am al");*/
         //Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam
         //eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.
         //overlapper.run("O draconia;conian devil! Oh la;h lame sa;saint!");
@@ -29,10 +34,6 @@ public class Overlapper {
             String current = fragments.get(0);
             fragments.remove(current);
             Pair<String, String> mostCommonStringOverlapPair = getMaximalOverlap(current, fragments);
-            if (mostCommonStringOverlapPair == null) {
-                fragments.add(current);
-                continue;
-            }
             String mostSimilarFragment = mostCommonStringOverlapPair.getKey();
             String commonSubstring = mostCommonStringOverlapPair.getValue();
             fragments.remove(mostSimilarFragment);
@@ -75,33 +76,52 @@ public class Overlapper {
     }
 
     private static int getLengthOfCommonSubstring(String first, String second) {
-        int maxLen = 0;
+        int maxLength = 0;
         int firstLength = first.length();
         int secondLength = second.length();
 
-        int[][] table = new int[firstLength+1][secondLength+1];
+        int[][] lengths = new int[firstLength][secondLength];
 
-        for (int i = 1; i <= firstLength; i++) {
-            for (int j = 1; j <= secondLength; j++) {
-                if (first.charAt(i-1) == second.charAt(j-1)) {
-                    table[i][j] = table[i - 1][j - 1] + 1;
-                    if (table[i][j] > maxLen)
-                        maxLen = table[i][j];
+        for (int i = 0; i < firstLength; i++) {
+            for (int j = 0; j < secondLength; j++) {
+                if (first.charAt(i) == second.charAt(j)) {
+                    if (i == 0 || j == 0) {
+                        lengths[i][j] = 1;
+                    } else {
+                        lengths[i][j] = lengths[i - 1][j - 1] + 1;
+                    }
+                    if (lengths[i][j] > maxLength) {
+                        maxLength = lengths[i][j];
+                    }
                 }
             }
         }
-        return maxLen;
+        return maxLength;
     }
 
-    private static String removeCommonSubstring(String s1, String s2) {
+    private static String getCommonSubstring(String currentFragment, String mostSimilarFragment, int length) {
+        String substring = mostSimilarFragment.substring(0, length);
+        if (currentFragment.endsWith(substring)) {
+            return substring;
+        }
+        int l = mostSimilarFragment.length();
+        int dif = Math.max(length, l) - Math.min(length, l);
+        substring = mostSimilarFragment.substring(dif);
+        if (currentFragment.startsWith(substring)) {
+            return substring;
+        }
+        return null;
+    }
+
+    private static String removeCommonSubstring(String currentFragment, String mostSimilarFragment) {
         int start = 0;
         int max = 0;
-        for (int i = 0; i < s1.length(); i++) {
-            for (int j = 0; j < s2.length(); j++) {
+        for (int i = 0; i < currentFragment.length(); i++) {
+            for (int j = 0; j < mostSimilarFragment.length(); j++) {
                 int x = 0;
-                while (s1.charAt(i + x) == s2.charAt(j + x)) {
+                while (currentFragment.charAt(i + x) == mostSimilarFragment.charAt(j + x)) {
                     x++;
-                    if (((i + x) >= s1.length()) || ((j + x) >= s2.length())) {
+                    if (((i + x) >= currentFragment.length()) || ((j + x) >= mostSimilarFragment.length())) {
                         break;
                     }
                 }
@@ -111,7 +131,7 @@ public class Overlapper {
                 }
             }
         }
-        return s1.substring(start, (start + max));
+        return currentFragment.substring(start, (start + max));
     }
 
 }
