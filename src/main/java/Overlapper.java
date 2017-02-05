@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class Overlapper {
 
@@ -13,18 +14,6 @@ public class Overlapper {
         Overlapper overlapper = new Overlapper();
         String fileName = args[0];
         Files.lines(Paths.get(fileName)).forEach(overlapper::run);
-        /*overlapper.run("m quaerat voluptatem.;pora incidunt ut labore et d;, consectetur, adipisci " +
-                "velit;olore magnam aliqua;idunt ut labore et dolore magn;uptatem.;i dolorem " +
-                "ipsum qu;iquam quaerat vol;psum quia dolor sit amet, consectetur, a;ia " +
-                "dolor sit amet, conse;squam est, qui do;Neque porro quisquam est, qu;aerat " +
-                "voluptatem.;m eius modi tem;Neque porro qui;, sed quia non numquam ei;lorem " +
-                "ipsum quia dolor sit amet;ctetur, adipisci velit, sed quia non numq;unt ut " +
-                "labore et dolore magnam aliquam qu;dipisci velit, sed quia non numqua;us " +
-                "modi tempora incid;Neque porro quisquam est, qui dolorem i;uam eius modi " +
-                "tem;pora inc;am al");*/
-        //Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam
-        //eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.
-        //overlapper.run("O draconia;conian devil! Oh la;h lame sa;saint!");
     }
 
     private void run(String file) {
@@ -37,6 +26,9 @@ public class Overlapper {
             String mostSimilarFragment = mostCommonStringOverlapPair.getKey();
             String commonSubstring = mostCommonStringOverlapPair.getValue();
             fragments.remove(mostSimilarFragment);
+            if (commonSubstring == null) {
+                continue;
+            }
             String newFragment;
             if (mostSimilarFragment.startsWith(commonSubstring)) {
                 newFragment = current + mostSimilarFragment.replace(commonSubstring, "");
@@ -53,23 +45,34 @@ public class Overlapper {
         List<String> remainingFragmentsCopy = new ArrayList<>(remainingFragments);
         int highestSimilarity = 0;
         int substringSimilarity = 0;
+        String currentComparingFragment = null;
         String mostSimilarFragment = null;
         String commonSubstring = null;
         boolean found = false;
         while (!found) {
             for (String remainingFragment : remainingFragmentsCopy) {
+                currentComparingFragment = remainingFragment;
                 substringSimilarity = getLengthOfCommonSubstring(currentFragment, remainingFragment);
                 if (substringSimilarity > highestSimilarity) {
                     highestSimilarity = substringSimilarity;
                     mostSimilarFragment = remainingFragment;
                 }
             }
-            commonSubstring = removeCommonSubstring(currentFragment, mostSimilarFragment);
-            if (mostSimilarFragment.startsWith(commonSubstring) || mostSimilarFragment.endsWith(commonSubstring)) {
+
+            if (mostSimilarFragment == null) {
+                mostSimilarFragment = currentComparingFragment;
+                commonSubstring = null;
+                break;
+            }
+
+            Optional<String> optionalCommonSubstring = getCommonSubstring(currentFragment, mostSimilarFragment, highestSimilarity);
+            if (optionalCommonSubstring.isPresent()) {
+                commonSubstring = optionalCommonSubstring.get();
                 found = true;
             } else {
                 highestSimilarity = substringSimilarity;
                 remainingFragmentsCopy.remove(mostSimilarFragment);
+                mostSimilarFragment = null;
             }
         }
         return new Pair<>(mostSimilarFragment, commonSubstring);
@@ -99,40 +102,18 @@ public class Overlapper {
         return maxLength;
     }
 
-    private static String getCommonSubstring(String currentFragment, String mostSimilarFragment, int length) {
+    private static Optional<String> getCommonSubstring(String currentFragment, String mostSimilarFragment, int length) {
         String substring = mostSimilarFragment.substring(0, length);
         if (currentFragment.endsWith(substring)) {
-            return substring;
+            return Optional.of(substring);
         }
         int l = mostSimilarFragment.length();
         int dif = Math.max(length, l) - Math.min(length, l);
         substring = mostSimilarFragment.substring(dif);
         if (currentFragment.startsWith(substring)) {
-            return substring;
+            return Optional.of(substring);
         }
-        return null;
-    }
-
-    private static String removeCommonSubstring(String currentFragment, String mostSimilarFragment) {
-        int start = 0;
-        int max = 0;
-        for (int i = 0; i < currentFragment.length(); i++) {
-            for (int j = 0; j < mostSimilarFragment.length(); j++) {
-                int x = 0;
-                while (currentFragment.charAt(i + x) == mostSimilarFragment.charAt(j + x)) {
-                    x++;
-                    if (((i + x) >= currentFragment.length()) || ((j + x) >= mostSimilarFragment.length())) {
-                        break;
-                    }
-                }
-                if (x > max) {
-                    max = x;
-                    start = i;
-                }
-            }
-        }
-        return currentFragment.substring(start, (start + max));
+        return Optional.empty();
     }
 
 }
-
